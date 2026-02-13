@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Sign Up - CodeMind AI</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+        <!-- Add Favicon -->
+    <link rel="icon" type="image/x-icon" href="images/logo.png">
+    <link rel="stylesheet" href="auth.css">
+</head>
+
+<body>
+    <!-- Theme Toggle -->
+    <div class="auth-theme-toggle">
+        <button class="theme-btn" id="themeToggle">
+            <span class="theme-icon" data-mode="light">🌙</span>
+        </button>
+    </div>
+
+    <!-- Decorative Elements -->
+    <div class="auth-decoration deco-1"></div>
+    <div class="auth-decoration deco-2"></div>
+    <div class="auth-decoration deco-3"></div>
+
+    <div class="auth-container">
+        <div class="auth-box">
+            <!-- Header -->
+            <div class="auth-header">
+                <div class="auth-logo">
+                    <span class="auth-logo-icon">⚡</span>
+                    <span class="auth-logo-text">CodeMind AI</span>
+                </div>
+                <h1 class="auth-title">Create Account</h1>
+                <p class="auth-subtitle">Join us and unlock the power of AI code assistance</p>
+            </div>
+
+            <!-- Signup Form -->
+            <form class="auth-form" id="signupForm">
+                <div class="form-group">
+                    <label class="form-label">Full Name</label>
+                    <input type="text" id="name" class="form-input" placeholder="Enter your full name" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Email Address</label>
+                    <input type="email" id="email" class="form-input" placeholder="Enter your email" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <div class="password-input">
+                        <input type="password" id="password" class="form-input" placeholder="Create a strong password"
+                            required minlength="6">
+                        <button type="button" class="toggle-password" onclick="togglePassword('password')">👁️</button>
+                    </div>
+                    <div class="password-strength">
+                        <div class="strength-bar" id="passwordStrength"></div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Confirm Password</label>
+                    <div class="password-input">
+                        <input type="password" id="confirmPassword" class="form-input"
+                            placeholder="Confirm your password" required>
+                        <button type="button" class="toggle-password"
+                            onclick="togglePassword('confirmPassword')">👁️</button>
+                    </div>
+                    <div id="passwordMatch" style="font-size: 0.75rem; margin-top: 4px;"></div>
+                </div>
+
+                <button type="submit" class="submit-btn" id="submitBtn">
+                    <span>Create Account</span>
+                </button>
+            </form>
+
+            <!-- Bottom Links -->
+            <div class="auth-bottom">
+                <p class="bottom-text">
+                    Already have an account? <a href="login.html" class="bottom-link">Sign In</a>
+                </p>
+            </div>
+
+            <!-- Message Display -->
+            <div id="msg"></div>
+        </div>
+    </div>
+
+    <script>
+        // Theme Toggle Functionality (Icon Only)
+        function initTheme() {
+            const themeToggle = document.getElementById("themeToggle");
+            const body = document.body;
+            const savedTheme = localStorage.getItem("theme");
+            const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+
+            if (savedTheme) {
+                body.setAttribute("data-theme", savedTheme);
+            } else if (prefersDark) {
+                body.setAttribute("data-theme", "dark");
+            } else {
+                body.setAttribute("data-theme", "light");
+            }
+            updateThemeIcon();
+        }
+
+        function updateThemeIcon() {
+            const themeToggle = document.getElementById("themeToggle");
+            const currentTheme = document.body.getAttribute("data-theme");
+
+            if (themeToggle) {
+                const icon = themeToggle.querySelector(".theme-icon");
+                if (icon) {
+                    // Sirf icon change karo
+                    icon.textContent = currentTheme === "light" ? "🌙" : "☀️";
+                }
+            }
+        }
+
+        document.getElementById("themeToggle").addEventListener("click", () => {
+            const body = document.body;
+            const currentTheme = body.getAttribute("data-theme");
+            const newTheme = currentTheme === "light" ? "dark" : "light";
+
+            body.setAttribute("data-theme", newTheme);
+            localStorage.setItem("theme", newTheme);
+            updateThemeIcon();
+        });
+
+
+        // Password Toggle
+        function togglePassword(inputId) {
+            const input = document.getElementById(inputId);
+            const type = input.getAttribute('type') === 'password' ? 'text' : 'password';
+            input.setAttribute('type', type);
+        }
+
+        // Password Strength Checker
+        function checkPasswordStrength(password) {
+            const strengthBar = document.getElementById('passwordStrength');
+            let strength = 0;
+
+            if (password.length >= 6) strength += 1;
+            if (password.length >= 8) strength += 1;
+            if (/[A-Z]/.test(password)) strength += 1;
+            if (/[0-9]/.test(password)) strength += 1;
+            if (/[^A-Za-z0-9]/.test(password)) strength += 1;
+
+            strengthBar.className = 'strength-bar';
+
+            if (password.length === 0) {
+                strengthBar.style.width = '0%';
+            } else if (strength <= 2) {
+                strengthBar.className += ' strength-weak';
+                strengthBar.style.width = '33%';
+            } else if (strength <= 4) {
+                strengthBar.className += ' strength-medium';
+                strengthBar.style.width = '66%';
+            } else {
+                strengthBar.className += ' strength-strong';
+                strengthBar.style.width = '100%';
+            }
+        }
+
+        // Password Match Checker
+        function checkPasswordMatch() {
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const matchDiv = document.getElementById('passwordMatch');
+
+            if (confirmPassword.length === 0) {
+                matchDiv.textContent = '';
+                matchDiv.style.color = '';
+            } else if (password === confirmPassword) {
+                matchDiv.textContent = '✓ Passwords match';
+                matchDiv.style.color = '#10b981';
+            } else {
+                matchDiv.textContent = '✗ Passwords do not match';
+                matchDiv.style.color = '#ef4444';
+            }
+        }
+
+        // Form Validation
+        function validateForm() {
+            const name = document.getElementById('name').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            if (name.length < 2) {
+                showMessage('Please enter a valid name', 'error');
+                return false;
+            }
+
+            if (!email.includes('@') || !email.includes('.')) {
+                showMessage('Please enter a valid email address', 'error');
+                return false;
+            }
+
+            if (password.length < 6) {
+                showMessage('Password must be at least 6 characters long', 'error');
+                return false;
+            }
+
+            if (password !== confirmPassword) {
+                showMessage('Passwords do not match', 'error');
+                return false;
+            }
+
+            return true;
+        }
+
+        // Show Message
+        function showMessage(message, type) {
+            const msgDiv = document.getElementById('msg');
+            msgDiv.textContent = message;
+            msgDiv.className = type === 'error' ? 'msg-error' : 'msg-success';
+
+            setTimeout(() => {
+                msgDiv.textContent = '';
+                msgDiv.className = '';
+            }, 5000);
+        }
+
+        // Signup Form Handler
+        document.getElementById("signupForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            if (!validateForm()) return;
+
+            const submitBtn = document.getElementById("submitBtn");
+            const name = document.getElementById("name").value.trim();
+            const email = document.getElementById("email").value.trim();
+            const password = document.getElementById("password").value;
+
+            // Show loading
+            submitBtn.innerHTML = '<span class="loading"></span> Creating Account...';
+            submitBtn.disabled = true;
+
+            try {
+                const res = await fetch("/auth/signup", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ name, email, password }),
+                });
+
+                const data = await res.json();
+
+                if (data.success) {
+                    showMessage(data.message + ' Redirecting to login...', 'success');
+
+                    setTimeout(() => {
+                        window.location.href = "login.html";
+                    }, 2000);
+                } else {
+                    showMessage(data.message, 'error');
+                }
+            } catch (err) {
+                showMessage("Network error. Please try again.", 'error');
+            } finally {
+                submitBtn.innerHTML = '<span>Create Account</span>';
+                submitBtn.disabled = false;
+            }
+        });
+
+        // Event Listeners for real-time validation
+        document.getElementById('password').addEventListener('input', function () {
+            checkPasswordStrength(this.value);
+            checkPasswordMatch();
+        });
+
+        document.getElementById('confirmPassword').addEventListener('input', checkPasswordMatch);
+
+        // Initialize theme
+        initTheme();
+    </script>
+</body>
+
+</html>

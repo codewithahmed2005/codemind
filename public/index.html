@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>CodeMind AI</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- CodeMirror (syntax highlighting editor) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/material-darker.min.css">
+    <!-- Add Favicon -->
+    <link rel="icon" type="image/x-icon" href="images/logo.png">
+    <!-- Your CSS -->
+    <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+    <!-- Top Navbar -->
+    <header class="navbar">
+        <div class="navbar-inner">
+            <div class="brand" onclick="goToHome()" style="cursor: pointer;">
+                <img src="images/logo.png" alt="CodeMind AI" class="brand-logo-img">
+                <span class="brand-text">CodeMind AI</span>
+            </div>
+            <div class="navbar-right">
+                <span class="nav-pill">Gemini Flash 2.0</span>
+                <a href="about.html" class="auth-btn">About</a>
+                <!-- 🔹 Jab user login nahi hai -->
+                <div id="authLinks">
+                    <a href="login.html" class="auth-btn">Sign In</a>
+                    <a href="signup.html" class="auth-btn signup">Sign Up</a>
+                </div>
+
+                <div id="userBox" class="user-box" style="display: none;">
+                    <span id="userNameLabel" class="user-name"></span>
+                    <button id="logoutBtn" class="auth-btn logout">Logout</button>
+                </div>
+
+                <!-- Dark mode toggle -->
+                <button id="themeToggle" class="theme-toggle" type="button">
+                    <span class="theme-icon" data-mode="light">🌙</span>
+                    <span class="theme-text">Dark</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Wrapper -->
+    <main class="page">
+        <div class="page-inner">
+            <!-- Left Panel: Form -->
+            <section class="panel panel-left">
+                <h1 class="panel-title">Code Analysis</h1>
+                <p class="panel-subtitle">
+                    Choose a task, paste your code, and let AI explain, fix, convert, or document it.
+                </p>
+
+                <form class="form" onsubmit="return false;">
+                    <!-- Task Type -->
+                    <div class="form-group">
+                        <label for="taskType" class="form-label">Task Type</label>
+                        <select id="taskType" class="form-select">
+                            <option value="explain">Explain Code</option>
+                            <option value="fix">Find & Fix Bugs</option>
+                            <option value="convert">Convert Code</option>
+                            <option value="document">Generate Documentation</option>
+                        </select>
+                    </div>
+
+                    <!-- Language -->
+                    <div class="form-group">
+                        <label for="language" class="form-label">
+                            Language <span class="form-label-optional">(optional)</span>
+                        </label>
+                        <input type="text" id="language" class="form-input" placeholder="e.g. JavaScript, Python, C#" />
+                    </div>
+
+                    <!-- Target Language (Convert only) -->
+                    <div class="form-group" id="targetLanguageWrapper" style="display: none;">
+                        <label for="targetLanguage" class="form-label">
+                            Target Language
+                        </label>
+                        <input type="text" id="targetLanguage" class="form-input"
+                            placeholder="e.g. Python, TypeScript" />
+                    </div>
+
+                    <!-- Extra Instructions -->
+                    <div class="form-group">
+                        <label for="extra" class="form-label">
+                            Extra Instructions <span class="form-label-optional">(optional)</span>
+                        </label>
+                        <input type="text" id="extra" class="form-input"
+                            placeholder="e.g. Explain like I’m a beginner" />
+                    </div>
+
+                    <!-- Code Editor (textarea will be converted to CodeMirror) -->
+                    <div class="form-group">
+                        <label for="code" class="form-label">Your Code</label>
+                        <div class="code-editor-shell">
+                            <div class="code-editor-header">
+                                <span class="dot red"></span>
+                                <span class="dot yellow"></span>
+                                <span class="dot green"></span>
+                                <span class="code-editor-title">editor.js</span>
+                            </div>
+                            <textarea id="code" rows="12" class="code-textarea"
+                                placeholder="Paste your code here..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="form-actions">
+                        <button type="button" id="submitBtn" class="btn-primary">
+                            <span>Run with AI</span>
+                            <span class="btn-kbd">Ctrl + Enter</span>
+                        </button>
+                    </div>
+                </form>
+            </section>
+
+            <!-- Right Panel: Chat-style AI Response Terminal -->
+            <section class="panel panel-right">
+                <div class="panel-header-row">
+                    <h2 class="panel-title">AI Response</h2>
+                    <span class="response-status">Ready</span>
+                </div>
+
+                <div class="terminal">
+                    <div class="terminal-header">
+                        <span class="terminal-title">AI Output</span>
+                        <span class="terminal-badge">Developer Mode</span>
+                    </div>
+                    <div class="terminal-body">
+                        <!-- Chat container -->
+                        <div id="resultBox" class="terminal-output">
+                            <div class="chat-empty">Waiting for your first request…</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="helper-text">
+                    Tip: Use clear instructions + correct language for better results.
+                </div>
+            </section>
+            <div class="about-section">
+                <h3>💡 About CodeMind AI</h3>
+                <p>Powered by Gemini Flash 2.0</p>
+                <p style="margin-top: 4px; color: var(--primary); font-weight: 600;">GIS (Grow In Sky)</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- CodeMirror JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
+
+    <!-- Your JS -->
+    <script src="script.js"></script>
+</body>
+
+</html>

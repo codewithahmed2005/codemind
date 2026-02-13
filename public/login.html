@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Login - CodeMind AI</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+        <!-- Add Favicon -->
+    <link rel="icon" type="image/x-icon" href="images/logo.png">
+    <link rel="stylesheet" href="auth.css">
+</head>
+
+<body>
+    <!-- Theme Toggle -->
+    <div class="auth-theme-toggle">
+        <button class="theme-btn" id="themeToggle">
+            <span class="theme-icon" data-mode="light">🌙</span>
+        </button>
+    </div>
+
+    <!-- Decorative Elements -->
+    <div class="auth-decoration deco-1"></div>
+    <div class="auth-decoration deco-2"></div>
+    <div class="auth-decoration deco-3"></div>
+
+    <div class="auth-container">
+        <div class="auth-box">
+            <!-- Header -->
+            <div class="auth-header">
+                <div class="auth-logo">
+                    <span class="auth-logo-icon">⚡</span>
+                    <span class="auth-logo-text">CodeMind AI</span>
+                </div>
+                <h1 class="auth-title">Welcome Back</h1>
+                <p class="auth-subtitle">Sign in to your account to continue</p>
+            </div>
+
+            <!-- Login Form -->
+            <form class="auth-form" id="loginForm">
+                <div class="form-group">
+                    <label class="form-label">Email Address</label>
+                    <input type="email" id="email" class="form-input" placeholder="Enter your email" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <div class="password-input">
+                        <input type="password" id="password" class="form-input" placeholder="Enter your password"
+                            required>
+                        <button type="button" class="toggle-password" onclick="togglePassword('password')">👁️</button>
+                    </div>
+                </div>
+
+                <button type="submit" class="submit-btn" id="submitBtn">
+                    <span>Sign In</span>
+                </button>
+            </form>
+
+            <!-- Bottom Links -->
+            <div class="auth-bottom">
+                <p class="bottom-text">
+                    Don't have an account? <a href="signup.html" class="bottom-link">Create Account</a>
+                </p>
+            </div>
+
+            <!-- Message Display -->
+            <div id="msg"></div>
+        </div>
+    </div>
+
+    <script>
+        // Theme Toggle Functionality (Icon Only)
+        function initTheme() {
+            const themeToggle = document.getElementById("themeToggle");
+            const body = document.body;
+            const savedTheme = localStorage.getItem("theme");
+            const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+
+            if (savedTheme) {
+                body.setAttribute("data-theme", savedTheme);
+            } else if (prefersDark) {
+                body.setAttribute("data-theme", "dark");
+            } else {
+                body.setAttribute("data-theme", "light");
+            }
+            updateThemeIcon();
+        }
+
+        function updateThemeIcon() {
+            const themeToggle = document.getElementById("themeToggle");
+            const currentTheme = document.body.getAttribute("data-theme");
+
+            if (themeToggle) {
+                const icon = themeToggle.querySelector(".theme-icon");
+                if (icon) {
+                    // Sirf icon change karo
+                    icon.textContent = currentTheme === "light" ? "🌙" : "☀️";
+                }
+            }
+        }
+
+        document.getElementById("themeToggle").addEventListener("click", () => {
+            const body = document.body;
+            const currentTheme = body.getAttribute("data-theme");
+            const newTheme = currentTheme === "light" ? "dark" : "light";
+
+            body.setAttribute("data-theme", newTheme);
+            localStorage.setItem("theme", newTheme);
+            updateThemeIcon();
+        });
+
+        // Password Toggle
+        function togglePassword(inputId) {
+            const input = document.getElementById(inputId);
+            const type = input.getAttribute('type') === 'password' ? 'text' : 'password';
+            input.setAttribute('type', type);
+        }
+
+        // Login Form Handler
+        document.getElementById("loginForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            const submitBtn = document.getElementById("submitBtn");
+            const msgDiv = document.getElementById("msg");
+            const email = document.getElementById("email").value.trim();
+            const password = document.getElementById("password").value.trim();
+
+            // Show loading
+            submitBtn.innerHTML = '<span class="loading"></span> Signing In...';
+            submitBtn.disabled = true;
+            msgDiv.textContent = '';
+
+            try {
+                const res = await fetch("/auth/login", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email, password }),
+                });
+
+                const data = await res.json();
+
+                if (data.success) {
+                    msgDiv.className = "msg-success";
+                    msgDiv.textContent = data.message;
+                    localStorage.setItem("user", JSON.stringify(data.user));
+
+                    setTimeout(() => {
+                        window.location.href = "/";
+                    }, 1000);
+                } else {
+                    msgDiv.className = "msg-error";
+                    msgDiv.textContent = data.message;
+                }
+            } catch (err) {
+                msgDiv.className = "msg-error";
+                msgDiv.textContent = "Network error. Please try again.";
+            } finally {
+                submitBtn.innerHTML = '<span>Sign In</span>';
+                submitBtn.disabled = false;
+            }
+        });
+
+        // Initialize theme
+        initTheme();
+    </script>
+</body>
+
+</html>
