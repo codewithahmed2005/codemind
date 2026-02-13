@@ -1,20 +1,24 @@
 // --------------------------------------------------------------
-// FULL BACKEND WITH LOGIN + SIGNUP + GEMINI FLASH 2.0
+// FULL BACKEND WITH LOGIN + SIGNUP + GROQ AI
 // --------------------------------------------------------------
 
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-const { GoogleGenerativeAI } = require("@google/generative-ai");
 const fs = require("fs");
 const bcrypt = require("bcryptjs");
+const axios = require("axios");
 
-// App setup
+if (!process.env.GROQ_API_KEY) {
+  console.error("❌ GROQ_API_KEY missing in .env file");
+  process.exit(1);
+}
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 
 // --------------------------------------------------------------
-// LOAD USERS JSON (TEMPORARY DATABASE)
+// LOAD USERS JSON
 // --------------------------------------------------------------
 let users = [];
 
@@ -23,20 +27,22 @@ if (fs.existsSync("users.json")) {
 }
 
 // --------------------------------------------------------------
-// MIDDLEWARES (VERY IMPORTANT - ALWAYS BEFORE ROUTES)
+// MIDDLEWARES
 // --------------------------------------------------------------
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-// Serve frontend static files
 app.use(express.static("public"));
 
 // --------------------------------------------------------------
-// AUTH ROUTES (LOGIN + SIGNUP)
+// AUTH ROUTES
 // --------------------------------------------------------------
 app.post("/auth/signup", async (req, res) => {
   const { name, email, password } = req.body;
+
+  if (!name || !email || !password) {
+    return res.json({ success: false, message: "All fields required" });
+  }
 
   if (users.find(u => u.email === email)) {
     return res.json({ success: false, message: "Email already exists!" });
@@ -44,9 +50,14 @@ app.post("/auth/signup", async (req, res) => {
 
   const hashed = await bcrypt.hash(password, 10);
 
-  const newUser = { id: Date.now(), name, email, password: hashed };
-  users.push(newUser);
+  const newUser = {
+    id: Date.now(),
+    name,
+    email,
+    password: hashed
+  };
 
+  users.push(newUser);
   fs.writeFileSync("users.json", JSON.stringify(users, null, 2));
 
   res.json({ success: true, message: "Account created successfully!" });
@@ -73,175 +84,100 @@ app.post("/auth/login", async (req, res) => {
 });
 
 // --------------------------------------------------------------
-// GEMINI FLASH 2.0 SETUP
-// --------------------------------------------------------------
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-
-// --------------------------------------------------------------
 // HEALTH CHECK
 // --------------------------------------------------------------
 app.get("/api/health", (req, res) => {
   res.json({
     status: "ok",
-    message: "AI Code Helper backend running",
-    time: new Date().toISOString(),
+    time: new Date().toISOString()
   });
 });
 
 // --------------------------------------------------------------
-// TEST CRUD API (OPTIONAL)
-// --------------------------------------------------------------
-let items = [
-  { id: 1, name: "First item", completed: false },
-  { id: 2, name: "Second item", completed: true }
-];
-let nextId = 3;
-
-app.get("/api/items", (req, res) => {
-  res.json({ success: true, count: items.length, data: items });
-});
-
-app.post("/api/items", (req, res) => {
-  const { name, completed } = req.body;
-  if (!name) return res.status(400).json({ success: false, message: "Name required" });
-
-  const newItem = { id: nextId++, name, completed: completed ?? false };
-  items.push(newItem);
-
-  res.status(201).json({ success: true, data: newItem });
-});
-
-app.put("/api/items/:id", (req, res) => {
-  const id = parseInt(req.params.id);
-  const { name, completed } = req.body;
-
-  const index = items.findIndex(i => i.id === id);
-  if (index === -1) return res.status(404).json({ success: false, message: "Item not found" });
-
-  items[index] = {
-    ...items[index],
-    name: name ?? items[index].name,
-    completed: typeof completed === "boolean" ? completed : items[index].completed,
-  };
-
-  res.json({ success: true, data: items[index] });
-});
-
-app.delete("/api/items/:id", (req, res) => {
-  const id = parseInt(req.params.id);
-  const index = items.findIndex(i => i.id === id);
-
-  if (index === -1) return res.status(404).json({ success: false, message: "Item not found" });
-
-  const deleted = items[index];
-  items.splice(index, 1);
-
-  res.json({ success: true, message: "Deleted", data: deleted });
-});
-
-// --------------------------------------------------------------
-// ⭐ AI CODE HELPER (GEMINI FLASH 2.0) ⭐
+// AI CODE HELPER (Groq - LLaMA 3)
 // --------------------------------------------------------------
 app.post("/api/code-helper", async (req, res) => {
   try {
-    const { taskType, code, language, targetLanguage, extra } = req.body;
+    const { taskType, code, language, targetLanguage } = req.body;
 
-    if (!code || !taskType)
+    if (!taskType || !code) {
       return res.status(400).json({
         success: false,
-        message: "Fields 'taskType' and 'code' are required"
+        message: "taskType and code required"
       });
+    }
 
-    // Build dynamic AI prompt
     let prompt = "";
 
     if (taskType === "explain") {
-      prompt = `
-Explain this ${language || ""} code in simple language.
-Break it step-by-step:
-
-${code}
-
-Extra: ${extra || "None"}
-`;
-    } else if (taskType === "fix") {
-      prompt = `
-Find bugs in this ${language || ""} code.
-Explain mistakes and give a corrected version:
-
-${code}
-`;
-    } else if (taskType === "convert") {
-      prompt = `
-Convert this code from ${language || ""} to ${targetLanguage || ""}.
-Preserve logic and optimize:
-
-${code}
-`;
-    } else if (taskType === "document") {
-      prompt = `
-Write documentation for this ${language || ""} code.
-Include:
-- Purpose
-- Flow summary
-- Function explanations
-- Inputs & outputs
-- Example usage
-
-${code}
-`;
-    } else {
+      prompt = `Explain this ${language || ""} code clearly:\n\n${code}`;
+    }
+    else if (taskType === "fix") {
+      prompt = `Fix errors in this ${language || ""} code and return corrected code:\n\n${code}`;
+    }
+    else if (taskType === "convert") {
+      prompt = `Convert this ${language || ""} code to ${targetLanguage || ""}:\n\n${code}`;
+    }
+    else if (taskType === "document") {
+      prompt = `Write documentation for this ${language || ""} code:\n\n${code}`;
+    }
+    else {
       return res.status(400).json({
         success: false,
         message: "Invalid task type"
       });
     }
 
-    // Call Gemini Flash 2.0
-    const model = genAI.getGenerativeModel({
-      model: "gemini-2.0-flash"
-    });
+    const response = await axios.post(
+      "https://api.groq.com/openai/v1/chat/completions",
+      {
+       model: "llama-3.1-8b-instant",
+        messages: [
+          { role: "system", content: "You are a fast and precise coding assistant." },
+          { role: "user", content: prompt }
+        ],
+        max_tokens: 800,
+        temperature: 0.3
+      },
+      {
+        headers: {
+          "Authorization": `Bearer ${process.env.GROQ_API_KEY}`,
+          "Content-Type": "application/json"
+        },
+        timeout: 30000
+      }
+    );
 
-    const aiResponse = await model.generateContent(prompt);
-    const aiText = aiResponse.response.text();
+    if (!response.data.choices || !response.data.choices.length) {
+      throw new Error("Invalid model response");
+    }
 
-    return res.json({
+    const aiText = response.data.choices[0].message?.content || "No response";
+
+    res.json({
       success: true,
       taskType,
-      result: aiText,
+      result: aiText
     });
 
   } catch (err) {
-    console.error("Gemini Error:", err);
-    return res.status(500).json({
+    console.error("Groq Error:", err.response?.data || err.message);
+
+    res.status(500).json({
       success: false,
-      message: "Gemini Flash 2.0 API Error",
-      error: err.message
+      message: "Groq API Error",
+      error: err.response?.data || err.message
     });
   }
 });
 
 // --------------------------------------------------------------
-// 404 ROUTE
+// 404
 // --------------------------------------------------------------
 app.use((req, res) => {
   res.status(404).json({ success: false, message: "Route not found" });
 });
 
-// --------------------------------------------------------------
-// GLOBAL ERROR HANDLER
-// --------------------------------------------------------------
-app.use((err, req, res, next) => {
-  console.error("Unexpected error:", err);
-  res.status(500).json({
-    success: false,
-    message: "Internal server error",
-    error: err.message
-  });
-});
-
-// --------------------------------------------------------------
-// START SERVER
 // --------------------------------------------------------------
 app.listen(PORT, () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
