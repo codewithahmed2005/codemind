@@ -179,7 +179,7 @@ async function runAi() {
   const code = getCurrentCode().trim();
 
   if (!code || code === "// Paste your code here...\n// Or start typing your code\n\nfunction example() {\n  console.log('Hello, AI Code Helper!');\n}") {
-    alert("Pehle kuch code paste karo ya likho 🙂");
+    alert("Please paste or write some code first.");
     return;
   }
 
@@ -209,7 +209,7 @@ async function runAi() {
     const data = await res.json();
 
     if (!data.success) {
-      const msg = data.message || "AI is unable to process this code. Thoda check karke dubara try karo.";
+      const msg = data.message || "AI is unable to process this code. Please review it and try again.";
       appendChatMessage("ai", `Error: ${msg}`);
       if (statusEl) statusEl.textContent = "Error";
       return;
@@ -220,7 +220,7 @@ async function runAi() {
     
   } catch (err) {
     console.error("API Error:", err);
-    appendChatMessage("ai", "Kuch error aa gaya server ya network me. Thodi der baad try karo.\nError: " + err.message);
+    appendChatMessage("ai", "A server or network error occurred. Please try again shortly.\nError: " + err.message);
     if (statusEl) statusEl.textContent = "Error";
   } finally {
     // Re-enable button
@@ -253,7 +253,7 @@ document.addEventListener("keydown", function (e) {
   // ESC → clear editor (when editor is focused)
   if (e.key === "Escape") {
     if (codeEditor && codeEditor.hasFocus()) {
-      if (confirm("Kya tum code editor clear karna chahte ho?")) {
+      if (confirm("Are you sure you want to clear the code editor?")) {
         codeEditor.setValue("");
       }
     }
